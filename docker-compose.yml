@@ -1,0 +1,23 @@
+# Local stack: the model API plus an MLflow tracking UI.
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models:ro   # mount a trained model into the container
+    environment:
+      - CHURN_CONFIG=config/config.yaml
+    restart: unless-stopped
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.1
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns
+    command: >
+      mlflow server
+      --backend-store-uri file:/mlruns
+      --host 0.0.0.0
+      --port 5000

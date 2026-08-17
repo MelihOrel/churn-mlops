@@ -1,0 +1,105 @@
+# Central configuration for the churn MLOps pipeline.
+#
+# `data.source` selects which dataset the whole pipeline runs against. The
+# selected block under `datasets:` is merged into `data:` and `features:` at
+# load time, so every downstream stage stays source-agnostic.
+#
+#   telco     -> real IBM Telco Customer Churn data (7,043 customers)
+#   synthetic -> generated data, so the repo runs with no external files
+
+project:
+  name: churn-mlops
+  random_seed: 42
+
+data:
+  source: telco
+  target: Churn
+  test_size: 0.2
+  # Exact-duplicate feature vectors are legitimate distinct customers in a real
+  # extract (two people can share every attribute), so dropping them would bias
+  # the base rate. Only enabled for generated data, where duplicates are noise.
+  drop_duplicates: false
+
+datasets:
+  telco:
+    source_file: data/raw/Telco_customer_churn.xlsx   # raw vendor extract
+    raw_path: data/telco_churn.csv                    # canonical, adapter output
+    reference_path: data/telco_reference.csv
+    current_path: data/telco_current.csv
+    features:
+      numeric:
+        - tenure
+        - MonthlyCharges
+        - TotalCharges
+      categorical:
+        - Gender
+        - SeniorCitizen
+        - Partner
+        - Dependents
+        - PhoneService
+        - MultipleLines
+        - InternetService
+        - OnlineSecurity
+        - OnlineBackup
+        - DeviceProtection
+        - TechSupport
+        - StreamingTV
+        - StreamingMovies
+        - Contract
+        - PaperlessBilling
+        - PaymentMethod
+
+  synthetic:
+    raw_path: data/churn_raw.csv
+    reference_path: data/churn_reference.csv
+    current_path: data/churn_current.csv
+    n_samples: 8000
+    drop_duplicates: true
+    features:
+      numeric:
+        - tenure
+        - MonthlyCharges
+        - TotalCharges
+        - NumSupportTickets
+      categorical:
+        - Contract
+        - InternetService
+        - PaymentMethod
+        - HasPremiumSupport
+
+model:
+  type: gradient_boosting        # gradient_boosting | logistic_regression
+  n_estimators: 200
+  max_depth: 3
+  learning_rate: 0.05
+  class_weight_balanced: false   # only used by logistic_regression
+  registry_dir: models
+  model_filename: churn_model.joblib
+  metrics_filename: metrics.json
+  spec_filename: feature_spec.json
+
+mlflow:
+  # SQLite backend keeps the demo self-contained while staying on a supported
+  # store (the file store is deprecated in recent MLflow). Point this at a
+  # remote tracking server or Vertex AI Experiments in production.
+  tracking_uri: sqlite:///mlflow.db
+  experiment_name: churn-prediction
+
+monitoring:
+  drift_threshold: 0.15          # PSI above this flags a feature as drifted
+  report_dir: reports
+
+serving:
+  host: 0.0.0.0
+  port: 8000
+  # 'auto' selects the threshold that maximises expected campaign value on the
+  # held-out set (see business block below). Set a float to pin it manually.
+  decision_threshold: auto
+
+# Assumptions behind cost-sensitive threshold selection. These are business
+# inputs, not model hyperparameters — they belong in config where a stakeholder
+# can change them without touching code.
+business:
+  retention_offer_cost: 50     # cost of extending a retention offer
+  churn_loss: 500              # value lost when a customer churns
+  offer_success_rate: 0.30     # share of at-risk customers the offer retains
