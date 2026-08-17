@@ -2,7 +2,7 @@
 
 **An end-to-end MLOps pipeline for customer-churn prediction, built on the real IBM Telco Customer Churn dataset — data validation, leakage control, experiment tracking, cost-sensitive thresholding, a self-describing serving API, and drift monitoring.**
 
-[![CI](https://github.com/USERNAME/churn-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/churn-mlops/actions/workflows/ci.yml)
+(https://github.com/USERNAME/churn-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/churn-mlops/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Code style: ruff](https://img.shields.io/badge/lint-ruff-orange)
